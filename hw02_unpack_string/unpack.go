@@ -2,9 +2,7 @@ package hw02unpackstring
 
 import (
 	"errors"
-	"strconv"
 	"strings"
-	"unicode"
 )
 
 var ErrInvalidString = errors.New("invalid string")
@@ -14,32 +12,42 @@ func Unpack(s string) (string, error) {
 		return "", nil
 	}
 
-	if _, err := strconv.Atoi(s[0:1]); err == nil {
+	if IsDigit(s[0:1]) {
 		return "", ErrInvalidString
 	}
 
-	var result []string
+	var prev int32
+	var b strings.Builder
 
-	//nolint:nestif
-	for pos, char := range s {
-		if unicode.IsDigit(char) {
-			prev := s[pos-1 : pos]
-			if d, err := strconv.Atoi(string(char)); err == nil {
-				if _, err := strconv.Atoi(prev); err == nil {
-					return "", ErrInvalidString
-				}
+	for _, r := range s {
+		if IsDigit(string(r)) {
+			if IsDigit(string(prev)) {
+				return "", ErrInvalidString
+			}
 
-				if d == 0 {
-					result = result[:len(result)-1]
-				}
+			if int(r-'0') == 0 {
+				str := b.String()
+				str = str[:len(str)-len(string(prev))]
+				b.Reset()
+				b.WriteString(str)
+			}
 
-				for i := 1; i < d; i++ {
-					result = append(result, prev)
-				}
+			for i := int(r - '0'); i > 1; i-- {
+				b.WriteRune(prev)
 			}
 		} else {
-			result = append(result, string(char))
+			b.WriteRune(r)
+		}
+		prev = r
+	}
+	return b.String(), nil
+}
+
+func IsDigit(s string) bool {
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			return false
 		}
 	}
-	return strings.Join(result, ""), nil
+	return true
 }

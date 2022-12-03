@@ -16,8 +16,6 @@ func TestUnpack(t *testing.T) {
 		{input: "abccd", expected: "abccd"},
 		{input: "", expected: ""},
 		{input: "aaa0b", expected: "aab"},
-		{input: "a0", expected: ""},
-		{input: "a9", expected: "aaaaaaaaa"},
 		// uncomment if task with asterisk completed
 		// {input: `qwe\4\5`, expected: `qwe45`},
 		// {input: `qwe\45`, expected: `qwe44444`},
@@ -46,19 +44,19 @@ func TestUnpackInvalidString(t *testing.T) {
 	}
 }
 
-func TestLen(t *testing.T) {
+func TestNonAscii(t *testing.T) {
 	tests := []struct {
-		input string
-		len   int
+		input    string
+		expected string
 	}{
-		{input: "a0", len: 0},
-		{input: "a9", len: 9},
-		{input: "a0b9c1", len: 10},
-		// uncomment if task with asterisk completed
-		// {input: `qwe\4\5`, expected: `qwe45`},
-		// {input: `qwe\45`, expected: `qwe44444`},
-		// {input: `qwe\\5`, expected: `qwe\\\\\`},
-		// {input: `qwe\\\3`, expected: `qwe\3`},
+		{input: "а1б2в3", expected: "аббввв"},
+		{input: "a0", expected: ""},
+		{input: "a1", expected: "a"},
+		{input: "я9", expected: "яяяяяяяяя"},
+		{input: "สวัสดี", expected: "สวัสดี"},
+		{input: "สวัส4ดี", expected: "สวัสสสสดี"},
+		{input: "🙃0", expected: ""},
+		{input: "🙂9", expected: "🙂🙂🙂🙂🙂🙂🙂🙂🙂"},
 	}
 
 	for _, tc := range tests {
@@ -66,23 +64,27 @@ func TestLen(t *testing.T) {
 		t.Run(tc.input, func(t *testing.T) {
 			result, err := Unpack(tc.input)
 			require.NoError(t, err)
-			require.Equal(t, tc.len, len(result))
+			require.Equal(t, tc.expected, result)
 		})
 	}
 }
 
-func TestUnpackString(t *testing.T) {
-	iStrings := []string{"a0", "a9", "a0b9c1"}
-	for _, tc := range iStrings {
+func TestNonArabic(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{input: "১২৩", expected: "১২৩"},
+		{input: "১2২৩0", expected: "১১২"},
+		{input: "੩4", expected: "੩੩੩੩"},
+	}
+
+	for _, tc := range tests {
 		tc := tc
-		t.Run(tc, func(t *testing.T) {
-			res, err := Unpack(tc)
-
-			var s interface{} = res
-
-			_, ok := s.(string)
+		t.Run(tc.input, func(t *testing.T) {
+			result, err := Unpack(tc.input)
 			require.NoError(t, err)
-			require.Equal(t, true, ok)
+			require.Equal(t, tc.expected, result)
 		})
 	}
 }
