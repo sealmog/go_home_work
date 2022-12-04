@@ -12,7 +12,8 @@ func Unpack(s string) (string, error) {
 		return "", nil
 	}
 
-	if IsDigit(s[0:1]) {
+	ru := []rune(s)
+	if IsDigit(ru[0]) {
 		return "", ErrInvalidString
 	}
 
@@ -20,8 +21,8 @@ func Unpack(s string) (string, error) {
 	var b strings.Builder
 
 	for _, r := range s {
-		if IsDigit(string(r)) {
-			if IsDigit(string(prev)) {
+		if IsDigit(r) {
+			if IsDigit(prev) {
 				return "", ErrInvalidString
 			}
 
@@ -30,11 +31,10 @@ func Unpack(s string) (string, error) {
 				str = str[:len(str)-len(string(prev))]
 				b.Reset()
 				b.WriteString(str)
+				continue
 			}
-
-			for i := int(r - '0'); i > 1; i-- {
-				b.WriteRune(prev)
-			}
+			str := strings.Repeat(string(prev), int(r-'0')-1)
+			b.WriteString(str)
 		} else {
 			b.WriteRune(r)
 		}
@@ -43,11 +43,9 @@ func Unpack(s string) (string, error) {
 	return b.String(), nil
 }
 
-func IsDigit(s string) bool {
-	for _, c := range s {
-		if c < '0' || c > '9' {
-			return false
-		}
+func IsDigit(r rune) bool {
+	if r < '0' || r > '9' {
+		return false
 	}
 	return true
 }
