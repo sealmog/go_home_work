@@ -13,32 +13,32 @@ func Unpack(s string) (string, error) {
 	}
 
 	ru := []rune(s)
+	lenRu := len(ru)
+	var b strings.Builder
+
 	if IsDigit(ru[0]) {
 		return "", ErrInvalidString
 	}
 
-	var prev int32
-	var b strings.Builder
-
-	for _, r := range s {
-		if IsDigit(r) {
-			if IsDigit(prev) {
-				return "", ErrInvalidString
-			}
-
-			if int(r-'0') == 0 {
-				str := b.String()
-				str = str[:len(str)-len(string(prev))]
-				b.Reset()
-				b.WriteString(str)
+	for i, r := range ru {
+		if i+1 < lenRu {
+			if ru[i+1] == 48 {
 				continue
 			}
-			str := strings.Repeat(string(prev), int(r-'0')-1)
-			b.WriteString(str)
-		} else {
-			b.WriteRune(r)
 		}
-		prev = r
+		if IsDigit(r) {
+			if IsDigit(ru[i-1]) {
+				return "", ErrInvalidString
+			}
+			if ru[i] == 48 {
+				continue
+			}
+
+			str := strings.Repeat(string(ru[i-1]), int(r-'0')-1)
+			b.WriteString(str)
+			continue
+		}
+		b.WriteRune(r)
 	}
 	return b.String(), nil
 }
