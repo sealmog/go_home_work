@@ -1,7 +1,6 @@
 package hw03frequencyanalysis
 
 import (
-	"regexp"
 	"sort"
 	"strings"
 )
@@ -11,25 +10,26 @@ type Word struct {
 	count int
 }
 
-var re = regexp.MustCompile("[a-z0-9а-я-ÄÖÜäöüß]+")
+// var re = regexp.MustCompile("[a-z0-9а-я-ÄÖÜäöüß]+")
 
 func Top10(str string) []string {
-	sWords := make([]Word, 0)
+	count := 1
 	s := strings.Fields(str)
+	mWords := make(map[string]int)
 
 	for _, w := range s {
-		wl := strings.ToLower(w)
-
-		if wl != "-" && wl != "" {
-			wr := re.FindString(wl)
-
-			if !contains(sWords, wr) {
-				sWords = append(sWords, Word{
-					word:  wr,
-					count: 1,
-				})
-			}
+		if w != "" {
+			mWords[w] += count
 		}
+	}
+
+	sWords := make([]Word, 0, len(mWords))
+
+	for k := range mWords {
+		sWords = append(sWords, Word{
+			word:  k,
+			count: mWords[k],
+		})
 	}
 
 	sort.Slice(sWords, func(i, j int) bool {
@@ -43,21 +43,11 @@ func Top10(str string) []string {
 	})
 
 	res := make([]string, 0)
-	for _, v := range sWords {
+	for i, v := range sWords {
 		res = append(res, v.word)
-	}
-	if len(res) > 10 {
-		return res[0:10]
-	}
-	return res
-}
-
-func contains(s []Word, str string) bool {
-	for i, v := range s {
-		if v.word == str {
-			s[i].count++
-			return true
+		if i > 8 {
+			break
 		}
 	}
-	return false
+	return res
 }
