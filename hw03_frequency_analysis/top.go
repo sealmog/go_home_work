@@ -13,13 +13,12 @@ type Word struct {
 // var re = regexp.MustCompile("[a-z0-9а-я-ÄÖÜäöüß]+")
 
 func Top10(str string) []string {
-	count := 1
 	s := strings.Fields(str)
 	mWords := make(map[string]int)
 
 	for _, w := range s {
 		if w != "" {
-			mWords[w] += count
+			mWords[w]++
 		}
 	}
 
@@ -42,10 +41,10 @@ func Top10(str string) []string {
 		}
 	})
 
-	res := make([]string, 0)
-	for i, v := range sWords {
+	res := make([]string, 0, 10)
+	for _, v := range sWords {
 		res = append(res, v.word)
-		if i > 8 {
+		if len(res) == 10 {
 			break
 		}
 	}
