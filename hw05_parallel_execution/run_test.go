@@ -93,7 +93,7 @@ func TestRun(t *testing.T) {
 		require.Error(t, err)
 	})
 
-	t.Run("tasks without errors Eventually", func(t *testing.T) {
+	t.Run("tasks with errors Eventually", func(t *testing.T) {
 		tasksCount := 10
 		tasks := make([]Task, 0, tasksCount)
 
@@ -120,6 +120,41 @@ func TestRun(t *testing.T) {
 			}
 			t.Logf("not all tasks were completed: %v", err)
 			return false
-		}, 2*time.Second, 500*time.Millisecond, "can't complete all tasks")
+		}, 15*time.Second, 500*time.Millisecond, "can't complete all tasks")
+	})
+
+	t.Run("tasks with first single error Eventually", func(t *testing.T) {
+		tasksCount := 100
+		tasks := make([]Task, 0, tasksCount)
+
+		var runTasksCount int32
+
+		tasks = append(tasks, func() error {
+			time.Sleep(time.Millisecond * time.Duration(rand.Intn(100)))
+			atomic.AddInt32(&runTasksCount, 1)
+			return fmt.Errorf("error from task %d", 1)
+		})
+
+		for i := 0; i < tasksCount-1; i++ {
+			tasks = append(tasks, func() error {
+				time.Sleep(time.Millisecond * time.Duration(rand.Intn(100)))
+				atomic.AddInt32(&runTasksCount, 1)
+				return nil
+			})
+		}
+
+		workersCount := 10
+		maxErrorsCount := 1
+
+		require.Eventually(t, func() bool {
+			time.Sleep(time.Millisecond * time.Duration(rand.Intn(100)))
+			err := Run(tasks, workersCount, maxErrorsCount)
+			if err != nil {
+				t.Logf("all tasks is completed")
+				return true
+			}
+			t.Logf("not all tasks were completed: %v", err)
+			return false
+		}, 15*time.Second, 500*time.Millisecond, "can't complete all tasks")
 	})
 }

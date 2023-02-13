@@ -2,6 +2,7 @@ package hw05parallelexecution
 
 import (
 	"errors"
+	"sync"
 )
 
 var ErrErrorsLimitExceeded = errors.New("errors limit exceeded")
@@ -11,19 +12,18 @@ type Task func() error
 func worker(jobs <-chan Task, errs chan<- error, quit <-chan struct{}) {
 	for {
 		select {
+		case <-quit:
+			return
+		default:
+		}
+		select {
+		case <-quit:
+			return
 		case job, ok := <-jobs:
 			if !ok {
 				return
 			}
-
-			err := job()
-			if err != nil {
-				errs <- err
-			} else {
-				errs <- nil
-			}
-		case <-quit:
-			return
+			errs <- job()
 		}
 	}
 }
@@ -36,25 +36,35 @@ func Run(tasks []Task, n, m int) error {
 
 	numJobs := len(tasks)
 	jobs := make(chan Task)
-	errs := make(chan error)
+	errs := make(chan error, numJobs)
 	quit := make(chan struct{})
-	// var wg sync.WaitGroup
+	var wg sync.WaitGroup
 
 	for w := 1; w <= n; w++ {
-		// wg.Add(1)
+		wg.Add(1)
 
 		go func() {
-			// defer wg.Done()
+			defer wg.Done()
 			worker(jobs, errs, quit)
 		}()
 	}
 
+	wg.Add(1)
+
 	go func() {
+		defer wg.Done()
+		defer close(jobs)
+
 		for _, task := range tasks {
 			select {
-			case jobs <- task:
 			case <-quit:
 				return
+			default:
+			}
+			select {
+			case <-quit:
+				return
+			case jobs <- task:
 			}
 		}
 	}()
@@ -69,15 +79,14 @@ func Run(tasks []Task, n, m int) error {
 
 		if errCounter >= m {
 			close(quit)
-
-			for b := 1; b <= n; b++ {
-				<-errs
-			}
-			// wg.Wait()
+			wg.Wait()
+			close(errs)
 			return ErrErrorsLimitExceeded
 		}
 	}
-	// wg.Wait()
+
 	close(quit)
+	wg.Wait()
+	close(errs)
 	return nil
 }
