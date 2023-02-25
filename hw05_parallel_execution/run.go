@@ -3,27 +3,18 @@ package hw05parallelexecution
 import (
 	"errors"
 	"sync"
+	"sync/atomic"
 )
 
 var ErrErrorsLimitExceeded = errors.New("errors limit exceeded")
 
 type Task func() error
 
-func worker(jobs <-chan Task, errs chan<- error, quit <-chan struct{}) {
-	for {
-		select {
-		case <-quit:
-			return
-		default:
-		}
-		select {
-		case <-quit:
-			return
-		case job, ok := <-jobs:
-			if !ok {
-				return
-			}
-			errs <- job()
+func worker(jobs <-chan Task, errCounter *int32) {
+	for job := range jobs {
+		err := job()
+		if err != nil {
+			atomic.AddInt32(errCounter, 1)
 		}
 	}
 }
@@ -34,10 +25,8 @@ func Run(tasks []Task, n, m int) error {
 		return ErrErrorsLimitExceeded
 	}
 
-	numJobs := len(tasks)
 	jobs := make(chan Task)
-	errs := make(chan error, numJobs)
-	quit := make(chan struct{})
+	var errCounter int32
 	var wg sync.WaitGroup
 
 	for w := 1; w <= n; w++ {
@@ -45,7 +34,7 @@ func Run(tasks []Task, n, m int) error {
 
 		go func() {
 			defer wg.Done()
-			worker(jobs, errs, quit)
+			worker(jobs, &errCounter)
 		}()
 	}
 
@@ -53,40 +42,18 @@ func Run(tasks []Task, n, m int) error {
 
 	go func() {
 		defer wg.Done()
-		defer close(jobs)
-
 		for _, task := range tasks {
-			select {
-			case <-quit:
-				return
-			default:
-			}
-			select {
-			case <-quit:
-				return
-			case jobs <- task:
+			jobs <- task
+			if atomic.LoadInt32(&errCounter) >= int32(m) {
+				break
 			}
 		}
+		close(jobs)
 	}()
 
-	errCounter := 0
-
-	for a := 1; a <= numJobs; a++ {
-		err := <-errs
-		if err != nil {
-			errCounter++
-		}
-
-		if errCounter >= m {
-			close(quit)
-			wg.Wait()
-			close(errs)
-			return ErrErrorsLimitExceeded
-		}
-	}
-
-	close(quit)
 	wg.Wait()
-	close(errs)
+	if errCounter >= int32(m) {
+		return ErrErrorsLimitExceeded
+	}
 	return nil
 }
