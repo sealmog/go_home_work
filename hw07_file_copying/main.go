@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"os"
 )
 
 var (
@@ -18,5 +20,17 @@ func init() {
 
 func main() {
 	flag.Parse()
-	// Place your code here.
+
+	var bar Bar
+	bar.NewOption(0, 100)
+	for i := 0; i <= 100; i++ {
+		err := Copy(from, to, offset, limit)
+		if err != nil {
+			fmt.Println("some error is present...", err)
+			os.Exit(1)
+		}
+
+		bar.Play(int64(i))
+	}
+	bar.Finish()
 }
