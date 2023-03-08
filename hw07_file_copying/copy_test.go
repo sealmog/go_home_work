@@ -47,6 +47,26 @@ func TestCopy(t *testing.T) {
 			name: "offset 6000, limit 1000", from: "testdata/input.txt", to: "/tmp/output.txt",
 			offset: 6000, limit: 1000, expected: 617,
 		},
+
+		{
+			name: "/dev/random offset 0, limit 0", from: "/dev/random", to: "/tmp/output.txt",
+			offset: 0, limit: 0, expected: 0,
+		},
+
+		{
+			name: "/dev/urandom offset 0, limit 0", from: "/dev/urandom", to: "/tmp/output.txt",
+			offset: 0, limit: 0, expected: 0,
+		},
+
+		{
+			name: "/dev/zero offset 0, limit 0", from: "/dev/zero", to: "/tmp/output.txt",
+			offset: 0, limit: 0, expected: 0,
+		},
+
+		{
+			name: "/dev/null offset 0, limit 0", from: "/dev/null", to: "/tmp/output.txt",
+			offset: 0, limit: 0, expected: 0,
+		},
 	}
 
 	for _, tc := range tests {

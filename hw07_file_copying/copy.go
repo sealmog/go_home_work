@@ -1,8 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"errors"
+	"io"
 	"os"
+
+	"github.com/schollz/progressbar/v3"
 )
 
 var (
@@ -30,18 +34,26 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 		limit = fs.Size() - offset
 	}
 
-	buf := make([]byte, limit)
 	_, err = f.Seek(offset, 0)
 	if err != nil {
 		return ErrUnsupportedFile
 	}
 
-	_, err = f.Read(buf)
+	reader := bufio.NewReader(f)
+	limitReader := io.LimitReader(reader, limit)
+
+	fo, err := os.OpenFile(toPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
 	if err != nil {
 		return ErrUnsupportedFile
 	}
+	defer fo.Close()
 
-	err = os.WriteFile(toPath, buf, 0o600)
+	bar := progressbar.DefaultBytes(
+		limit,
+		"coping",
+	)
+
+	_, err = io.Copy(io.MultiWriter(fo, bar), limitReader)
 	if err != nil {
 		return ErrUnsupportedFile
 	}
