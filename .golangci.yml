@@ -23,7 +23,8 @@ linters:
   enable:
     - asciicheck
     - bodyclose
-    - depguard
+# import 'github.com/stretchr/testify/assert' is not allowed from list 'Main' (depguard)
+#    - depguard
     - dogsled
     - dupl
     - durationcheck
