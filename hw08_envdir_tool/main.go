@@ -24,20 +24,20 @@ func exportEnv(mEnv Environment) error {
 
 func main() {
 	if len(os.Args) < 6 {
-		log.Fatal("Program executed without required args")
+		log.Println("Program executed without required args")
 		os.Exit(22)
 	}
 
 	path := os.Args[1]
 	mEnv, err := ReadDir(path)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		os.Exit(20)
 	}
 
 	err = exportEnv(mEnv)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		os.Exit(10)
 	}
 
